@@ -1,0 +1,23 @@
+{
+  "name": "intensity-segments",
+  "version": "1.0.0",
+  "description": "A TypeScript library for managing intensity segments over a timeline. This library provides a robust way to handle overlapping intensity changes and maintain a clean, efficient representation of intensity values over time.",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.8.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "tsx": "^3.13.0",
+    "typescript": "^5.2.2"
+  }
+}
