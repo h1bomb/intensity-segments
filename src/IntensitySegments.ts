@@ -1,3 +1,5 @@
+import { Point, Intensity, Segment } from './types';
+
 /**
  * Manages a collection of intensity segments over a timeline.
  * Each segment represents a period with a specific intensity value.
@@ -12,10 +14,41 @@
  */
 export class IntensitySegments {
   /** Array of [point, intensity] pairs representing the segments */
-  segments: number[][];
+  private segments: Segment[];
 
   constructor() {
     this.segments = [];
+  }
+
+  /**
+   * Validates time range parameters
+   * @throws {TypeError} If parameters are not numbers
+   * @throws {RangeError} If parameters are invalid
+   */
+  private validateTimeRange(from: Point, to: Point): void {
+    if (typeof from !== 'number' || typeof to !== 'number') {
+      throw new TypeError('Time points must be numbers');
+    }
+    if (!Number.isFinite(from) || !Number.isFinite(to)) {
+      throw new RangeError('Time points must be finite numbers');
+    }
+    if (from >= to) {
+      throw new RangeError('Start time must be less than end time');
+    }
+  }
+
+  /**
+   * Validates intensity parameter
+   * @throws {TypeError} If parameter is not a number
+   * @throws {RangeError} If parameter is invalid
+   */
+  private validateIntensity(intensity: Intensity): void {
+    if (typeof intensity !== 'number') {
+      throw new TypeError('Intensity must be a number');
+    }
+    if (!Number.isFinite(intensity)) {
+      throw new RangeError('Intensity must be a finite number');
+    }
   }
 
   /**
@@ -25,21 +58,47 @@ export class IntensitySegments {
    * @param from Starting point of the range
    * @param to Ending point of the range
    * @param amount Intensity value to add (can be negative)
+   * @throws {TypeError | RangeError} If parameters are invalid
    */
-  add(from: number, to: number, amount: number) {
-    const changes = new Map<number, number>();
-    
-    // Convert existing segments to point changes
-    for (let i = 0; i < this.segments.length - 1; i++) {
+  add(from: Point, to: Point, amount: Intensity): void {
+    this.validateTimeRange(from, to);
+    this.validateIntensity(amount);
+
+    // Pre-allocate arrays for better performance
+    const points = new Array<Point>(this.segments.length * 2 + 2);
+    const intensities = new Array<Intensity>(points.length);
+    let index = 0;
+
+    // Add existing segment change points
+    for (let i = 0; i < this.segments.length; i++) {
       const [start, intensity] = this.segments[i];
-      const [end] = this.segments[i + 1];
-      changes.set(start, (changes.get(start) || 0) + intensity);
-      changes.set(end, (changes.get(end) || 0) - intensity);
+      points[index] = start;
+      intensities[index] = intensity;
+      index++;
+
+      // If not the last segment, add the next segment's start point as current segment's end
+      if (i < this.segments.length - 1) {
+        const [nextStart] = this.segments[i + 1];
+        points[index] = nextStart;
+        intensities[index] = -intensity;
+        index++;
+      }
     }
-    
+
     // Add new intensity changes
-    changes.set(from, (changes.get(from) || 0) + amount);
-    changes.set(to, (changes.get(to) || 0) - amount);
+    points[index] = from;
+    intensities[index] = amount;
+    index++;
+    points[index] = to;
+    intensities[index] = -amount;
+    index++;
+
+    // Create final changes map
+    const changes = new Map<Point, Intensity>();
+    for (let i = 0; i < index; i++) {
+      const point = points[i];
+      changes.set(point, (changes.get(point) || 0) + intensities[i]);
+    }
     
     this.applyChanges(changes);
   }
@@ -51,9 +110,13 @@ export class IntensitySegments {
    * @param from Starting point of the range
    * @param to Ending point of the range
    * @param amount New intensity value for the range
+   * @throws {TypeError | RangeError} If parameters are invalid
    */
-  set(from: number, to: number, amount: number) {
-    const newSegments: number[][] = [];
+  set(from: Point, to: Point, amount: Intensity): void {
+    this.validateTimeRange(from, to);
+    this.validateIntensity(amount);
+
+    const newSegments: Segment[] = [];
     
     // Add segments before the range
     for (const [point, intensity] of this.segments) {
@@ -76,6 +139,7 @@ export class IntensitySegments {
       }
     }
     
+    // Add the end point of the range
     newSegments.push([to, afterIntensity]);
     
     // Add segments after the range
@@ -85,16 +149,23 @@ export class IntensitySegments {
       }
     }
     
-    this.segments = newSegments;
-    
     // Clean up and normalize segments
-    const changes = new Map<number, number>();
-    for (let i = 0; i < this.segments.length - 1; i++) {
-      const [start, intensity] = this.segments[i];
-      const [end] = this.segments[i + 1];
+    const changes = new Map<Point, Intensity>();
+    for (let i = 0; i < newSegments.length; i++) {
+      const [start, intensity] = newSegments[i];
       changes.set(start, (changes.get(start) || 0) + intensity);
-      changes.set(end, (changes.get(end) || 0) - intensity);
+      
+      // If not the last segment, add the next segment's start point as current segment's end
+      if (i < newSegments.length - 1) {
+        const [nextStart] = newSegments[i + 1];
+        changes.set(nextStart, (changes.get(nextStart) || 0) - intensity);
+      } else if (intensity !== 0) {
+        // If it's the last segment and intensity is not zero, add an end point
+        const lastPoint = Math.max(...newSegments.map(([p]) => p));
+        changes.set(lastPoint + 1, -intensity);
+      }
     }
+    
     this.applyChanges(changes);
   }
 
@@ -107,19 +178,21 @@ export class IntensitySegments {
    * 
    * @param changes Map of points to their intensity changes
    */
-  private applyChanges(changes: Map<number, number>) {
+  private applyChanges(changes: Map<Point, Intensity>): void {
     // Sort points and calculate cumulative intensities
     const points = Array.from(changes.keys()).sort((a, b) => a - b);
+    const newSegments = new Array<Segment>(points.length);
     let currentIntensity = 0;
     
-    const newSegments: number[][] = [];
-    for (const point of points) {
+    // Generate all segments
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
       currentIntensity += changes.get(point) || 0;
-      newSegments.push([point, currentIntensity]);
+      newSegments[i] = [point, currentIntensity];
     }
     
     // Process segments to remove unnecessary zeros
-    const finalSegments: number[][] = [];
+    const finalSegments: Segment[] = [];
     let foundNonZero = false;
     
     for (let i = 0; i < newSegments.length; i++) {
@@ -147,10 +220,85 @@ export class IntensitySegments {
   }
 
   /**
+   * Gets the intensity value at a specific point in time
+   * @param time The point in time to get the intensity for
+   * @returns The intensity value at the specified time
+   * @throws {TypeError | RangeError} If time parameter is invalid
+   */
+  getIntensityAt(time: Point): Intensity {
+    if (typeof time !== 'number' || !Number.isFinite(time)) {
+      throw new TypeError('Time must be a finite number');
+    }
+
+    if (this.segments.length === 0) return 0;
+    
+    // Binary search optimization
+    let left = 0;
+    let right = this.segments.length - 1;
+    
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const [point] = this.segments[mid];
+      
+      if (point === time) {
+        return this.segments[mid][1];
+      } else if (point < time) {
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+    
+    return right >= 0 ? this.segments[right][1] : 0;
+  }
+
+  /**
+   * Gets all segments within a specified time range
+   * @param from Start of the range
+   * @param to End of the range
+   * @returns Array of segments within the range
+   * @throws {TypeError | RangeError} If parameters are invalid
+   */
+  getSegmentsInRange(from: Point, to: Point): Segment[] {
+    this.validateTimeRange(from, to);
+    return this.segments.filter(([point]) => point >= from && point <= to);
+  }
+
+  /**
+   * Clears all segments
+   */
+  clear(): void {
+    this.segments = [];
+  }
+
+  /**
+   * Gets the total absolute intensity change across all segments
+   * @returns The sum of absolute intensity changes
+   */
+  getTotalIntensityChange(): number {
+    return this.segments.reduce((sum, [_, intensity], index, arr) => {
+      if (index < arr.length - 1) {
+        const nextIntensity = arr[index + 1][1];
+        sum += Math.abs(nextIntensity - intensity);
+      }
+      return sum;
+    }, 0);
+  }
+
+  /**
+   * Gets all segments
+   * @returns A copy of all segments
+   */
+  getSegments(): Segment[] {
+    return [...this.segments];
+  }
+
+  /**
    * Returns a JSON string representation of the segments.
    * Format: [[point, intensity], ...]
+   * @returns JSON string of segments
    */
-  toString() {
+  toString(): string {
     return JSON.stringify(this.segments);
   }
 }
