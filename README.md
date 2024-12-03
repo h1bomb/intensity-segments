@@ -1,5 +1,9 @@
 # Intensity Segments Manager
 
+[![CI](https://github.com/h1bomb/intensity-segments/actions/workflows/ci.yml/badge.svg)](https://github.com/h1bomb/intensity-segments/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/h1bomb/intensity-segments/branch/main/graph/badge.svg)](https://codecov.io/gh/[username]/ts-project)
+[![npm version](https://badge.fury.io/js/intensity-segments.svg)](https://badge.fury.io/js/intensity-segments)
+
 A TypeScript library for managing intensity segments over a timeline. This library provides a robust way to handle overlapping intensity changes and maintain a clean, efficient representation of intensity values over time.
 
 ## Features
@@ -150,4 +154,3 @@ npm run build
 ├── dist/          # Compiled files
 ├── package.json   # Project configuration
 └── README.md      # Project documentation
-```
