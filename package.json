@@ -9,9 +9,22 @@
     "test": "jest",
     "test:coverage": "jest --coverage"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/h1bomb/intensity-segments.git"
+  },
+  "bugs": {
+    "url": "https://github.com/h1bomb/intensity-segments/issues"
+  },
+  "homepage": "https://github.com/h1bomb/intensity-segments#readme",
+  "keywords": [
+    "typescript",
+    "intensity",
+    "segments",
+    "timeline"
+  ],
+  "author": "h1bomb",
+  "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.5",
     "@types/node": "^20.8.0",
