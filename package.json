@@ -1,6 +1,6 @@
 {
   "name": "intensity-segments",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A TypeScript library for managing intensity segments over a timeline. This library provides a robust way to handle overlapping intensity changes and maintain a clean, efficient representation of intensity values over time.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

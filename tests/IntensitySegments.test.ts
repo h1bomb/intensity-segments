@@ -13,6 +13,35 @@ describe('IntensitySegments', () => {
     });
   });
 
+  describe('Parameter validation', () => {
+    describe('Time range validation', () => {
+      it('should throw TypeError for non-number time points', () => {
+        expect(() => segments.add('10' as any, 30, 1)).toThrow('Invalid type: time points must be numbers');
+        expect(() => segments.add(10, '30' as any, 1)).toThrow('Invalid type: time points must be numbers');
+      });
+
+      it('should throw RangeError for non-finite time points', () => {
+        expect(() => segments.add(Infinity, 30, 1)).toThrow('Invalid range: time points must be finite numbers');
+        expect(() => segments.add(10, Infinity, 1)).toThrow('Invalid range: time points must be finite numbers');
+      });
+
+      it('should throw RangeError when start time is greater than or equal to end time', () => {
+        expect(() => segments.add(30, 30, 1)).toThrow('Invalid range: start time must be less than end time');
+        expect(() => segments.add(40, 30, 1)).toThrow('Invalid range: start time must be less than end time');
+      });
+    });
+
+    describe('Intensity validation', () => {
+      it('should throw TypeError for non-number intensity', () => {
+        expect(() => segments.add(10, 30, '1' as any)).toThrow('Invalid type: intensity must be a number');
+      });
+
+      it('should throw RangeError for non-finite intensity', () => {
+        expect(() => segments.add(10, 30, Infinity)).toThrow('Invalid range: intensity must be a finite number');
+      });
+    });
+  });
+
   describe('add() method', () => {
     it('should create a basic segment with single intensity', () => {
       segments.add(10, 30, 1);

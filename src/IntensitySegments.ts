@@ -14,7 +14,7 @@ import { Point, Intensity, Segment } from './types';
  */
 export class IntensitySegments {
   /** Array of [point, intensity] pairs representing the segments */
-  private segments: Segment[];
+  public segments: Segment[];
 
   constructor() {
     this.segments = [];
@@ -27,13 +27,13 @@ export class IntensitySegments {
    */
   private validateTimeRange(from: Point, to: Point): void {
     if (typeof from !== 'number' || typeof to !== 'number') {
-      throw new TypeError('Time points must be numbers');
+      throw new TypeError('Invalid type: time points must be numbers');
     }
     if (!Number.isFinite(from) || !Number.isFinite(to)) {
-      throw new RangeError('Time points must be finite numbers');
+      throw new RangeError('Invalid range: time points must be finite numbers');
     }
     if (from >= to) {
-      throw new RangeError('Start time must be less than end time');
+      throw new RangeError('Invalid range: start time must be less than end time');
     }
   }
 
@@ -44,10 +44,10 @@ export class IntensitySegments {
    */
   private validateIntensity(intensity: Intensity): void {
     if (typeof intensity !== 'number') {
-      throw new TypeError('Intensity must be a number');
+      throw new TypeError('Invalid type: intensity must be a number');
     }
     if (!Number.isFinite(intensity)) {
-      throw new RangeError('Intensity must be a finite number');
+      throw new RangeError('Invalid range: intensity must be a finite number');
     }
   }
 
@@ -159,10 +159,6 @@ export class IntensitySegments {
       if (i < newSegments.length - 1) {
         const [nextStart] = newSegments[i + 1];
         changes.set(nextStart, (changes.get(nextStart) || 0) - intensity);
-      } else if (intensity !== 0) {
-        // If it's the last segment and intensity is not zero, add an end point
-        const lastPoint = Math.max(...newSegments.map(([p]) => p));
-        changes.set(lastPoint + 1, -intensity);
       }
     }
     
@@ -220,83 +216,7 @@ export class IntensitySegments {
   }
 
   /**
-   * Gets the intensity value at a specific point in time
-   * @param time The point in time to get the intensity for
-   * @returns The intensity value at the specified time
-   * @throws {TypeError | RangeError} If time parameter is invalid
-   */
-  getIntensityAt(time: Point): Intensity {
-    if (typeof time !== 'number' || !Number.isFinite(time)) {
-      throw new TypeError('Time must be a finite number');
-    }
-
-    if (this.segments.length === 0) return 0;
-    
-    // Binary search optimization
-    let left = 0;
-    let right = this.segments.length - 1;
-    
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      const [point] = this.segments[mid];
-      
-      if (point === time) {
-        return this.segments[mid][1];
-      } else if (point < time) {
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-    }
-    
-    return right >= 0 ? this.segments[right][1] : 0;
-  }
-
-  /**
-   * Gets all segments within a specified time range
-   * @param from Start of the range
-   * @param to End of the range
-   * @returns Array of segments within the range
-   * @throws {TypeError | RangeError} If parameters are invalid
-   */
-  getSegmentsInRange(from: Point, to: Point): Segment[] {
-    this.validateTimeRange(from, to);
-    return this.segments.filter(([point]) => point >= from && point <= to);
-  }
-
-  /**
-   * Clears all segments
-   */
-  clear(): void {
-    this.segments = [];
-  }
-
-  /**
-   * Gets the total absolute intensity change across all segments
-   * @returns The sum of absolute intensity changes
-   */
-  getTotalIntensityChange(): number {
-    return this.segments.reduce((sum, [_, intensity], index, arr) => {
-      if (index < arr.length - 1) {
-        const nextIntensity = arr[index + 1][1];
-        sum += Math.abs(nextIntensity - intensity);
-      }
-      return sum;
-    }, 0);
-  }
-
-  /**
-   * Gets all segments
-   * @returns A copy of all segments
-   */
-  getSegments(): Segment[] {
-    return [...this.segments];
-  }
-
-  /**
-   * Returns a JSON string representation of the segments.
-   * Format: [[point, intensity], ...]
-   * @returns JSON string of segments
+   * Returns a string representation of the segments
    */
   toString(): string {
     return JSON.stringify(this.segments);
