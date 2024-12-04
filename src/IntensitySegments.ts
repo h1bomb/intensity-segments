@@ -1,4 +1,4 @@
-import { Point, Intensity, Segment } from './types';
+import { Point, Intensity, Segment, SegmentRange, CacheConfig } from './types';
 
 /**
  * Manages a collection of intensity segments over a timeline.
@@ -15,9 +15,24 @@ import { Point, Intensity, Segment } from './types';
 export class IntensitySegments {
   /** Array of [point, intensity] pairs representing the segments */
   public segments: Segment[];
+  
+  /** Cache for intensity values at specific points */
+  private intensityCache: Map<Point, { value: Intensity; timestamp: number }>;
+  
+  /** Cache configuration */
+  private cacheConfig: Required<CacheConfig>;
 
-  constructor() {
+  /**
+   * Creates a new IntensitySegments instance
+   * @param cacheConfig Optional cache configuration
+   */
+  constructor(cacheConfig?: CacheConfig) {
     this.segments = [];
+    this.intensityCache = new Map();
+    this.cacheConfig = {
+      maxSize: cacheConfig?.maxSize ?? 1000,
+      ttl: cacheConfig?.ttl ?? 5000, // 5 seconds default TTL
+    };
   }
 
   /**
@@ -52,6 +67,119 @@ export class IntensitySegments {
   }
 
   /**
+   * Binary search for the segment containing a specific time point
+   * @param time The time point to search for
+   * @returns Index of the segment containing the time point, or -1 if not found
+   */
+  private binarySearch(time: Point): number {
+    let left = 0;
+    let right = this.segments.length - 1;
+
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const [point] = this.segments[mid];
+
+      if (point === time) {
+        return mid;
+      }
+
+      if (point < time) {
+        if (mid === this.segments.length - 1 || this.segments[mid + 1][0] > time) {
+          return mid;
+        }
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+
+    return right;
+  }
+
+  /**
+   * Clears the intensity cache
+   */
+  private clearCache(): void {
+    this.intensityCache.clear();
+  }
+
+  /**
+   * Updates the cache with a new value
+   */
+  private updateCache(point: Point, intensity: Intensity): void {
+    // Remove expired entries
+    const now = Date.now();
+    for (const [key, { timestamp }] of this.intensityCache) {
+      if (now - timestamp > this.cacheConfig.ttl) {
+        this.intensityCache.delete(key);
+      }
+    }
+
+    // Ensure cache doesn't exceed max size
+    if (this.intensityCache.size >= this.cacheConfig.maxSize) {
+      const oldestKey = Array.from(this.intensityCache.keys())[0];
+      if (oldestKey !== undefined) {
+        this.intensityCache.delete(oldestKey);
+      }
+    }
+
+    // Add new value
+    this.intensityCache.set(point, { value: intensity, timestamp: now });
+  }
+
+  /**
+   * Gets the intensity value at a specific time point
+   * @param time The time point to get the intensity for
+   * @returns The intensity value at the specified time
+   */
+  getIntensityAt(time: Point): Intensity {
+    this.validateTimeRange(time, time + 1);
+
+    // Check cache first
+    const cached = this.intensityCache.get(time);
+    if (cached && Date.now() - cached.timestamp <= this.cacheConfig.ttl) {
+      return cached.value;
+    }
+
+    // If not in cache, perform binary search
+    const index = this.binarySearch(time);
+    const intensity = index >= 0 ? this.segments[index][1] : 0;
+
+    // Update cache
+    this.updateCache(time, intensity);
+
+    return intensity;
+  }
+
+  /**
+   * Gets the segment containing a specific time point
+   * @param time The time point to get the segment for
+   * @returns The segment containing the time point, or null if not found
+   */
+  getSegmentAt(time: Point): SegmentRange | null {
+    this.validateTimeRange(time, time + 1);
+
+    if (this.segments.length === 0) {
+      return null;
+    }
+
+    const index = this.binarySearch(time);
+    if (index < 0) {
+      return null;
+    }
+
+    const [start, intensity] = this.segments[index];
+    const end = index < this.segments.length - 1 ? this.segments[index + 1][0] : Infinity;
+
+    // Return null if the point is after the last non-zero segment
+    if (intensity === 0 && time > start) {
+      return null;
+    }
+
+    return { start, end, intensity };
+  }
+
+  /**
    * Adds an intensity change to a specified range.
    * The intensity is added to any existing intensities in the range.
    * 
@@ -63,6 +191,9 @@ export class IntensitySegments {
   add(from: Point, to: Point, amount: Intensity): void {
     this.validateTimeRange(from, to);
     this.validateIntensity(amount);
+
+    // Clear cache as segments are being modified
+    this.clearCache();
 
     // Pre-allocate arrays for better performance
     const points = new Array<Point>(this.segments.length * 2 + 2);
@@ -76,7 +207,6 @@ export class IntensitySegments {
       intensities[index] = intensity;
       index++;
 
-      // If not the last segment, add the next segment's start point as current segment's end
       if (i < this.segments.length - 1) {
         const [nextStart] = this.segments[i + 1];
         points[index] = nextStart;
@@ -115,6 +245,9 @@ export class IntensitySegments {
   set(from: Point, to: Point, amount: Intensity): void {
     this.validateTimeRange(from, to);
     this.validateIntensity(amount);
+
+    // Clear cache as segments are being modified
+    this.clearCache();
 
     const newSegments: Segment[] = [];
     
@@ -155,7 +288,6 @@ export class IntensitySegments {
       const [start, intensity] = newSegments[i];
       changes.set(start, (changes.get(start) || 0) + intensity);
       
-      // If not the last segment, add the next segment's start point as current segment's end
       if (i < newSegments.length - 1) {
         const [nextStart] = newSegments[i + 1];
         changes.set(nextStart, (changes.get(nextStart) || 0) - intensity);
@@ -195,11 +327,9 @@ export class IntensitySegments {
       const [point, intensity] = newSegments[i];
       const nextIntensity = i < newSegments.length - 1 ? newSegments[i + 1][1] : 0;
       
-      // Skip leading zeros until we find a non-zero intensity
       if (!foundNonZero && intensity === 0) continue;
       if (intensity !== 0) foundNonZero = true;
       
-      // Keep segment if it's meaningful
       if (intensity !== 0 || nextIntensity !== 0 || foundNonZero) {
         finalSegments.push([point, intensity]);
       }

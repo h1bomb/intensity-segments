@@ -13,3 +13,18 @@ export type Intensity = number;
  * [point, intensity]
  */
 export type Segment = [Point, Intensity];
+
+/** Segment object type with start, end, and intensity */
+export interface SegmentRange {
+  start: Point;
+  end: Point;
+  intensity: Intensity;
+}
+
+/** Cache configuration type */
+export interface CacheConfig {
+  /** Maximum size of the cache */
+  maxSize?: number;
+  /** Time to live in milliseconds */
+  ttl?: number;
+}
