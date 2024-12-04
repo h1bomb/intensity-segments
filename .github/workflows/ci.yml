@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     strategy:
@@ -27,9 +27,9 @@ jobs:
       run: npm install
     
     - name: Build
-      run: npm run build --if-present
+      run: npm run build
     
-    - name: Run tests and generate coverage
+    - name: Run tests
       run: npm test -- --coverage
     
     - name: Upload coverage to Codecov
@@ -39,11 +39,56 @@ jobs:
         files: ./coverage/lcov.info
         fail_ci_if_error: false
       continue-on-error: true
+
+  browser-tests:
+    needs: test
+    runs-on: ubuntu-latest
     
-    - name: Cache node modules
-      uses: actions/cache@v3
+    strategy:
+      fail-fast: false  
+      matrix:
+        browser: [chromium, firefox]
+        
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v3
       with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Install Playwright Browsers
+      run: |
+        npx playwright install --with-deps ${{ matrix.browser }}
+        npx playwright install-deps ${{ matrix.browser }}
+    
+    - name: Run browser tests
+      run: npm run test:browser -- --project=${{ matrix.browser }}
+      env:
+        CI: true
+        DEBUG: pw:api  
+    
+    - name: Upload test results
+      if: always()  
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-report-${{ matrix.browser }}
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 30
+    
+    - name: Upload Playwright traces
+      if: failure()  
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-traces-${{ matrix.browser }}
+        path: test-results/
+        retention-days: 30

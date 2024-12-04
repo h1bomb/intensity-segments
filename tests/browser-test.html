@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IntensitySegments Browser Tests</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://unpkg.com/mocha/mocha.css" />
+</head>
+<body>
+    <div id="mocha"></div>
+
+    <script>
+        // Global error handler
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('Global error:', { msg, url, line, col, error });
+            return false;
+        };
+    </script>
+
+    <script src="https://unpkg.com/chai@4.3.7/chai.js"></script>
+    <script src="https://unpkg.com/mocha@10.2.0/mocha.js"></script>
+
+    <script>
+        // Initialize Mocha
+        mocha.setup({
+            ui: 'bdd',
+            reporter: 'spec'
+        });
+        // Initialize Chai
+        const expect = chai.expect;
+    </script>
+
+    <script src="../dist/index.umd.js"></script>
+
+    <script>
+        // Debug information
+        console.log('Library object:', IntensitySegments);
+        
+        // Make sure the library is loaded correctly
+        if (typeof IntensitySegments === 'undefined') {
+            throw new Error('IntensitySegments library not loaded');
+        }
+        if (typeof IntensitySegments.IntensitySegments === 'undefined') {
+            throw new Error('IntensitySegments class not found in the library');
+        }
+        
+        // Use the named export
+        const IntensitySegmentsClass = IntensitySegments.IntensitySegments;
+        console.log('IntensitySegmentsClass:', IntensitySegmentsClass);
+    </script>
+
+    <script>
+        describe('IntensitySegments in Real Browser', () => {
+            let segments;
+
+            beforeEach(() => {
+                try {
+                    // Ensure each test uses a new instance
+                    segments = new IntensitySegmentsClass();
+                    console.log('Created new instance:', segments);
+                } catch (error) {
+                    console.error('Error creating instance:', error);
+                    throw error;
+                }
+            });
+
+            it('should initialize correctly', () => {
+                expect(segments).to.be.an('object');
+                expect(segments.segments).to.be.an('array');
+                expect(segments.segments.length).to.equal(0);
+            });
+
+            it('should handle basic operations', () => {
+                try {
+                    segments.add(0, 10, 1);
+                    segments.add(5, 15, 2);
+                    const result = segments.getIntensityAt(7);
+                    console.log('Basic operations result:', result);
+                    expect(result).to.equal(3);
+                } catch (error) {
+                    console.error('Error in basic operations:', error);
+                    throw error;
+                }
+            });
+
+            it('should handle floating point calculations', () => {
+                try {
+                    segments.add(0, 10, 1.5);
+                    segments.add(5, 15, 2.7);
+                    const result = segments.getIntensityAt(7);
+                    console.log('Floating point result:', result);
+                    expect(result).to.be.closeTo(4.2, 0.0001);
+                } catch (error) {
+                    console.error('Error in floating point calculations:', error);
+                    throw error;
+                }
+            });
+
+            it('should handle cache correctly', () => {
+                try {
+                    const cachedSegments = new IntensitySegmentsClass({
+                        maxSize: 5,
+                        ttl: 1000
+                    });
+
+                    cachedSegments.add(0, 10, 1);
+                    const point = 5;
+                    
+                    const firstCall = cachedSegments.getIntensityAt(point);
+                    const secondCall = cachedSegments.getIntensityAt(point);
+                    
+                    console.log('Cache test results:', { firstCall, secondCall });
+                    expect(firstCall).to.equal(secondCall);
+                    expect(firstCall).to.equal(1);
+                } catch (error) {
+                    console.error('Error in cache test:', error);
+                    throw error;
+                }
+            });
+
+            it('should handle concurrent operations', () => {
+                try {
+                    segments.add(0, 10, 1);
+                    segments.add(5, 15, 2);
+                    segments.set(7, 12, 3);
+                    
+                    const results = {
+                        at6: segments.getIntensityAt(6),
+                        at8: segments.getIntensityAt(8),
+                        at13: segments.getIntensityAt(13)
+                    };
+                    console.log('Concurrent operations results:', results);
+                    
+                    expect(results.at6).to.equal(3);
+                    expect(results.at8).to.equal(3);
+                    expect(results.at13).to.equal(2);
+                } catch (error) {
+                    console.error('Error in concurrent operations:', error);
+                    throw error;
+                }
+            });
+        });
+    </script>
+
+    <script>
+        // Run tests and store results for Playwright
+        let mochaResults;
+        const runner = mocha.run();
+
+        runner.on('fail', function(test, err) {
+            console.error('Test failed:', {
+                title: test.title,
+                error: err.message,
+                stack: err.stack
+            });
+        });
+
+        runner.on('end', function() {
+            const failures = Array.from(runner.failures || []);
+            mochaResults = {
+                completed: true,
+                passes: runner.stats.passes,
+                failures: runner.stats.failures,
+                total: runner.stats.tests,
+                duration: runner.stats.duration,
+                failedTests: failures.map(f => ({
+                    title: f.title,
+                    error: f.err?.message,
+                    stack: f.err?.stack
+                }))
+            };
+            window.mochaResults = mochaResults;
+            console.log('Final test results:', mochaResults);
+        });
+    </script>
+</body>
+</html>
