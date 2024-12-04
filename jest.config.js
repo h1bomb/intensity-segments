@@ -6,5 +6,10 @@ module.exports = {
     'src/**/*.ts',
     '!src/index.ts'
   ],
-  coverageDirectory: 'coverage'
+  coverageDirectory: 'coverage',
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: 'tsconfig.test.json'
+    }]
+  }
 };

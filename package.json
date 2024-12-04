@@ -1,8 +1,10 @@
 {
   "name": "intensity-segments",
-  "version": "1.0.4",
-  "description": "A TypeScript library for managing intensity segments over a timeline. This library provides a robust way to handle overlapping intensity changes and maintain a clean, efficient representation of intensity values over time.",
+  "version": "1.0.5",
+  "description": "A library for managing intensity segments over a timeline. This library provides a robust way to handle overlapping intensity changes and maintain a clean, efficient representation of intensity values over time.",
   "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "browser": "dist/index.umd.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
@@ -14,31 +16,34 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "test": "jest",
-    "build": "tsc",
+    "build": "rollup -c",
     "test:coverage": "jest --coverage"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/h1bomb/intensity-segments.git"
   },
+  "keywords": [
+    "intensity",
+    "segments",
+    "timeline",
+    "javascript",
+    "browser"
+  ],
+  "author": "h1bomb",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/h1bomb/intensity-segments/issues"
   },
   "homepage": "https://github.com/h1bomb/intensity-segments#readme",
-  "keywords": [
-    "typescript",
-    "intensity",
-    "segments",
-    "timeline"
-  ],
-  "author": "h1bomb",
-  "license": "MIT",
   "devDependencies": {
-    "@types/jest": "^29.5.5",
-    "@types/node": "^20.8.0",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.6",
     "jest": "^29.7.0",
+    "rollup": "^4.28.0",
+    "rollup-plugin-typescript2": "^0.36.0",
     "ts-jest": "^29.1.1",
-    "tsx": "^3.13.0",
-    "typescript": "^5.2.2"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2024-01-05
+
+### Changed
+- Added browser support with UMD and ESM builds
+- Updated build system to use Rollup
+- Updated module system to use ES modules
+- Improved Jest configuration
+- Removed TypeScript-specific wording from documentation
+
+### Added
+- Browser compatibility
+- Multiple module format support (CommonJS, ESM, UMD)
+
 ## [1.0.4] - 2024-01-08
 
 ### Added
@@ -59,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimized segment handling and zero value processing
 - Improved code organization and structure
 
+[1.0.5]: https://github.com/h1bomb/intensity-segments/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/h1bomb/intensity-segments/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/h1bomb/intensity-segments/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/h1bomb/intensity-segments/compare/v1.0.1...v1.0.2
