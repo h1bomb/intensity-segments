@@ -1,8 +1,10 @@
 # 强度分段管理器
 
 [![CI](https://github.com/h1bomb/intensity-segments/actions/workflows/ci.yml/badge.svg)](https://github.com/h1bomb/intensity-segments/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/github/h1bomb/intensity-segments/graph/badge.svg?token=1DP6kKsrGG)](https://codecov.io/github/h1bomb/intensity-segments)
-[![npm version](https://badge.fury.io/js/intensity-segments.svg)](https://badge.fury.io/js/intensity-segments)
+<a href="https://codecov.io/github/h1bomb/intensity-segments" > 
+ <img src="https://codecov.io/github/h1bomb/intensity-segments/graph/badge.svg?token=1DP6kKsrGG"/> 
+ </a>
+<a href="https://badge.fury.io/js/intensity-segments"><img src="https://badge.fury.io/js/intensity-segments.svg" alt="npm version" height="18"></a>
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [English](./README.md) | 简体中文
